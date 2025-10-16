@@ -4,17 +4,20 @@
 本專案提供以 **虛擬環境** 為基礎的模組化量化交易系統範例，涵蓋策略、回測、實盤執行、介面與資料管理模組，並示範兩套高期望值策略（ADX 趨勢動能、RSI 動能突破）。  
 This repository delivers a virtual-environment-first, modular quantitative trading system skeleton, featuring strategy, backtest, execution, UI, and storage modules plus two high-expected-value strategies (ADX Trend Momentum, RSI Momentum Breakout).
 
+最新版本引入多種最佳化技術（網格搜尋、Gaussian Process、Optuna TPE/CMA-ES、強化學習探索），並提供可下載的最佳參數 YAML 與歷史紀錄，使 AI 訓練流程更貼近實務。  
+The latest update adds multiple optimisation backends (grid, GP Bayesian, Optuna TPE/CMA-ES, reinforcement learning) with downloadable YAML configs and persistent history for practical AI-driven tuning.
+
 ---
 
 ## 1. 建置流程 | Setup Workflow
 
-1. 建立虛擬環境：  
+1. 建立虛擬環境並安裝套件：  
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
    ```  
-   Create a virtual environment and install dependencies.
+   Create a virtual environment and install dependencies (includes Optuna for advanced optimisation).
 
 2. 快速語法檢查：  
    ```bash
@@ -62,9 +65,15 @@ rich_proj/
 │       ├── execution/
 │       │   └── live_executor.py    # 實盤執行藍本 | Live execution blueprint
 │       ├── interfaces/
-│       │   └── ui_dashboard.py     # Streamlit 儀表板 | Streamlit dashboard
+│       │   ├── ui_dashboard.py     # Streamlit 儀表板 | Streamlit dashboard
+│       │   └── ui_ai_training.py   # AI 最佳化分頁 | AI optimisation workspace
+│       ├── optimization/
+│       │   ├── __init__.py
+│       │   ├── engine.py           # 最佳化引擎 | Optimisation engine
+│       │   └── spaces.py           # 參數搜尋空間 | Parameter search spaces
 │       └── storage/
-│           └── repository.py       # 策略存取 | Strategy repository
+│           ├── repository.py       # 策略存取 | Strategy repository
+│           └── optimization_store.py # 最佳化結果儲存 | Optimisation storage
 └── tests/
     ├── test_config_loader.py       # 組態測試 | Config loader test
     ├── test_backtest_engine.py     # 回測引擎測試 | Backtest engine test
@@ -88,7 +97,13 @@ rich_proj/
   `data_fetcher.py` 內建 Binance 公開 REST API 取價功能（`data_source: binance`），若 API 無回應會退回示意資料，方便離線開發。
 
 - **使用者介面 | User Interface**  
-  `ui_app.py` 搭配 `interfaces/ui_dashboard.py`，透過 Streamlit 提供策略選擇、參數調整、回測觸發與結果視覺化，全程雙語提示。
+  `ui_app.py` 搭配 `interfaces/ui_dashboard.py` 與 `interfaces/ui_ai_training.py`，透過 Streamlit 提供策略選擇、參數調整、回測觸發與 AI 最佳化工作站，全程雙語提示並支援最佳參數下載。
+
+- **最佳化引擎 | Optimisation Engine**  
+  `optimization/engine.py` 整合網格搜尋、Gaussian Process Bayesian、Optuna TPE / CMA-ES，以及強化學習（epsilon-greedy bandit）探索，搭配回呼更新、進階參數與結果排序。
+
+- **最佳化結果儲存 | Optimisation Persistence**  
+  `storage/optimization_store.py` 以 CSV / JSON 保存每次最佳化結果與中繼資訊，方便在 UI 歷史列表回顧對照。
 
 - **策略儲存管理 | Strategy Storage**  
   `storage/repository.py` 使用 JSON/CSV 快速儲存策略參數與紀錄，可延伸至 SQLite。
@@ -112,10 +127,11 @@ rich_proj/
 ## 5. 下一步建議 | Suggested Next Steps
 
 1. **啟用真實行情 | Enable Live Market Feed**：將 `config/strategy.yaml` 的 `data_source` 設為 `binance` 並設定交易對，即可透過公開 API 取得真實 K 線。  
-2. **完善回測分析 | Enhance Backtesting Metrics**：新增 Sharpe Ratio、最大回撤等分析器並撰寫 pytest 測試。  
-3. **實盤接入 | Connect Live Trading**：串接 Binance/CCXT 並加入 API 金鑰管理與重試邏輯。  
-4. **介面擴充 | Expand UI**：加入參數即時調整、策略切換與通知推播。  
-5. **風控深化 | Deepen Risk Controls**：實作每日停損、部位上限與部位網格追蹤。
+2. **完善回測分析 | Enhance Backtesting Metrics**：新增 Sharpe Ratio、Calmar、最大回撤等分析器並撰寫 pytest 測試。  
+3. **實盤接入 | Connect Live Trading**：串接 Binance/CCXT 並加入 API 金鑰管理、重試與下單驗證。  
+4. **AI 最佳化深化 | Advance AI Optimisation**：試驗更多 Optuna sampler/pruner 組合，或導入強化學習策略網路與回合制訓練。  
+5. **介面擴充 | Expand UI**：加入參數即時調整、策略切換、通知推播與自訂報表。  
+6. **風控深化 | Deepen Risk Controls**：實作每日停損、部位上限與資金費率調整等機制。
 
 ---
 
@@ -136,7 +152,11 @@ rich_proj/
    - 資產淨值曲線（Equity Curve）  
    - 交易紀錄表格（進出場價、方向、PnL）
 
-4. 切換「AI 訓練」分頁，可設定訓練迭代次數、資本與風控，並即時檢視 AI 模擬搜尋各組參數的回測結果。
+4. 切換「AI 訓練」分頁：
+   - 選擇最佳化方法（Grid / GP Bayesian / Optuna / Reinforcement Learning）
+   - 設定迭代次數、隨機種子與進階參數（Optuna 取樣器 / Pruner、RL 探索率等）
+   - 調整風控與風險參數（勝率門檻、最大回撤、單筆風險、滑點）
+   - 觀察即時進度與結果表格，完成後可下載最佳參數 YAML 並瀏覽歷史紀錄
 
 全數操作皆提供繁中｜英文提示，無需命令列亦可完成策略回測流程。  
 All interactions are bilingual, allowing you to conduct backtests entirely from the UI without touching the CLI.
