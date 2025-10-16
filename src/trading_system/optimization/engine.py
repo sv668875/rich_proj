@@ -18,6 +18,13 @@ from ..backtest import run_backtest
 from ..config_loader import StrategyConfig
 from .spaces import ParameterSpace, get_default_space
 
+try:  # Optional dependency for Streamlit callbacks
+    from streamlit.errors import NoSessionContext, StreamlitAPIException
+
+    _STREAMLIT_CALLBACK_ERRORS: Tuple[type, ...] = (NoSessionContext, StreamlitAPIException)
+except Exception:  # pragma: no cover - Streamlit may not be installed
+    _STREAMLIT_CALLBACK_ERRORS = tuple()
+
 try:
     import optuna
 except ImportError:  # pragma: no cover - optional dependency
@@ -105,8 +112,7 @@ class StrategyOptimizer:
             metrics = self._evaluate_parameters(params)
             record = self._format_record(iteration, params, metrics)
             results.append(record)
-            if self.on_evaluation:
-                self.on_evaluation(iteration, params, metrics)
+            self._notify_evaluation(iteration, params, metrics)
         return results
 
     def _bayesian_search(self, iterations: int, random_seed: Optional[int]) -> List[Dict[str, float]]:
@@ -137,8 +143,7 @@ class StrategyOptimizer:
 
             record = self._format_record(iteration, params, metrics)
             results.append(record)
-            if self.on_evaluation:
-                self.on_evaluation(iteration, params, metrics)
+            self._notify_evaluation(iteration, params, metrics)
         return results
 
     def _optuna_search(self, iterations: int, random_seed: Optional[int]) -> List[Dict[str, float]]:
@@ -201,8 +206,7 @@ class StrategyOptimizer:
             metrics = self._evaluate_parameters(params)
             record = self._format_record(len(interim_results) + 1, params, metrics)
             interim_results.append(record)
-            if self.on_evaluation:
-                self.on_evaluation(len(interim_results), params, metrics)
+            self._notify_evaluation(len(interim_results), params, metrics)
             return float(metrics.get("total_return_pct", 0.0))
 
         study.optimize(
@@ -250,14 +254,26 @@ class StrategyOptimizer:
             q_values[key] = q_prev + alpha * (reward - q_prev)
 
             results.append(record)
-            if self.on_evaluation:
-                self.on_evaluation(iteration, params, metrics)
+            self._notify_evaluation(iteration, params, metrics)
             epsilon = max(epsilon * decay, epsilon_min)
 
         results.sort(key=lambda r: (r.get("total_return_pct", 0.0), r.get("win_rate", 0.0)), reverse=True)
         for idx, record in enumerate(results, start=1):
             record["iteration"] = idx
         return results
+
+    def _notify_evaluation(self, iteration: int, params: Dict[str, float], metrics: Dict[str, float]) -> None:
+        """Safely invoke evaluation callbacks (ignore Streamlit session issues)."""
+
+        if not self.on_evaluation:
+            return
+
+        try:
+            self.on_evaluation(iteration, params, metrics)
+        except Exception as exc:  # pylint: disable=broad-except
+            if _STREAMLIT_CALLBACK_ERRORS and isinstance(exc, _STREAMLIT_CALLBACK_ERRORS):
+                return
+            raise
 
     def _suggest_next(
         self,
