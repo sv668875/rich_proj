@@ -1,0 +1,6 @@
+{
+  "strategy_name": "rsi_momentum",
+  "method": "optuna",
+  "started_at": "2025-10-16T03:27:42.290844",
+  "iterations": 50
+}

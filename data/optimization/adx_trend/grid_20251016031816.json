@@ -1,0 +1,6 @@
+{
+  "strategy_name": "adx_trend",
+  "method": "grid",
+  "started_at": "2025-10-16T03:18:09.678151",
+  "iterations": 15
+}

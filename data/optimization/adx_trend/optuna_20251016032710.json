@@ -1,0 +1,6 @@
+{
+  "strategy_name": "adx_trend",
+  "method": "optuna",
+  "started_at": "2025-10-16T03:26:45.782639",
+  "iterations": 50
+}

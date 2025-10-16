@@ -1,0 +1,7 @@
+numpy>=1.23
+pandas>=1.5
+PyYAML>=6.0
+streamlit>=1.25
+pytest>=7.4
+requests>=2.31
+optuna>=3.4

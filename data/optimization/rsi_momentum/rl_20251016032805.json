@@ -1,0 +1,6 @@
+{
+  "strategy_name": "rsi_momentum",
+  "method": "rl",
+  "started_at": "2025-10-16T03:28:00.135981",
+  "iterations": 50
+}

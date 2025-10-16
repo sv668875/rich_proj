@@ -1,0 +1,8 @@
+{
+  "strategy_name": "rsi_momentum",
+  "method": "bayesian",
+  "started_at": "2025-10-16T03:47:47.289324",
+  "iterations": 30,
+  "options": {},
+  "random_seed": 42
+}

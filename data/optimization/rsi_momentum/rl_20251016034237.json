@@ -1,0 +1,14 @@
+{
+  "strategy_name": "rsi_momentum",
+  "method": "rl",
+  "started_at": "2025-10-16T03:42:33.397444",
+  "iterations": 50,
+  "options": {
+    "rl_epsilon_start": 0.3,
+    "rl_epsilon_min": 0.05,
+    "rl_epsilon_decay": 0.95,
+    "rl_reward_mix": 0.6,
+    "rl_pool_multiplier": 4
+  },
+  "random_seed": 42
+}

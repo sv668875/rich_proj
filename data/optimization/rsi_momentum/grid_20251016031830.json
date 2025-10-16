@@ -1,0 +1,6 @@
+{
+  "strategy_name": "rsi_momentum",
+  "method": "grid",
+  "started_at": "2025-10-16T03:18:27.965141",
+  "iterations": 30
+}
